@@ -10,11 +10,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
-#include <sys/time.h>
 #include <math.h>
 #include <pthread.h>
 
 #include "global_defines.h"
+#include "util.h"
 #include "gif.h"
 #include "kb.h"
 #include "game_test.h"
@@ -85,11 +85,6 @@ void color_frame_to_eth(uint16_t led_index) {
             }
         }
     }
-}
-
-double get_millis(struct timeval *tv) {
-    gettimeofday(tv, 0);
-    return tv->tv_sec * 1000 + tv->tv_usec / 1000.0; 
 }
 
 void load_gif_frame(struct frame *frame) {
@@ -252,7 +247,6 @@ int main(int argc, char **argv) {
     uint16_t i;
     uint8_t j, k;
 
-    struct timeval tv;
     double millis;
     double prev_millis = 0;
 
@@ -359,7 +353,7 @@ int main(int argc, char **argv) {
 
     #if DO_ETH
         while (1) {
-            millis = get_millis(&tv);
+            millis = get_millis();
             spf = (float) (millis - prev_millis) / 1000.0f;
             printf("%f FPS\n", 1.0f / spf);
 
