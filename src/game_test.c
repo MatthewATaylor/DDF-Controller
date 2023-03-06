@@ -12,7 +12,8 @@ void game_test_init(
 void game_test_loop(
     void *game_test,
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],
-    struct kb *kb
+    struct kb *kb,
+    float spf
 ) {
     /* Demo interface with red and blue fading animation */
 
@@ -20,7 +21,7 @@ void game_test_loop(
     uint8_t i, j;
     uint8_t max_brightness = 240;
 
-    printf("space is pressed: %d\n", kb_read_map(kb, KEY_SPACE));
+    printf("space is pressed: %d\n", kb_read_map(kb->map, KEY_SPACE));
 
     if (game->color_value == max_brightness || game->color_value == 0) {
         game->direction *= -1;

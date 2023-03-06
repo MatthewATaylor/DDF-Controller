@@ -260,13 +260,15 @@ int main(int argc, char **argv) {
     uint16_t frame_index = 0;
     struct frame *current_frame;
 
+    float spf = 0;
+
     pthread_t ser_thread;
     struct gif gif;
 
     uint8_t is_game = 1;
     void *game_obj;
     void (*game_init_func)(void *, uint8_t[LED_ROWS][LED_COLS][LED_CHANNELS]);
-    void (*game_loop_func)(void *, uint8_t[LED_ROWS][LED_COLS][LED_CHANNELS], struct kb *);
+    void (*game_loop_func)(void *, uint8_t[LED_ROWS][LED_COLS][LED_CHANNELS], struct kb *, float);
     struct kb kb;
 
     /* Add all game structs here */
@@ -358,12 +360,12 @@ int main(int argc, char **argv) {
     #if DO_ETH
         while (1) {
             millis = get_millis(&tv);
-
-            printf("%f FPS\n", 1000 / (millis - prev_millis));
+            spf = (float) (millis - prev_millis) / 1000.0f;
+            printf("%f FPS\n", 1.0f / spf);
 
             if (is_game) {
                 kb_update_map(&kb);
-                (*game_loop_func)(game_obj, color_frame_adj, &kb);
+                (*game_loop_func)(game_obj, color_frame_adj, &kb, spf);
 
                 /* Limit game brightness */
                 for (i = 0; i < LED_ROWS; ++i) {

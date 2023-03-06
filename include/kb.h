@@ -14,12 +14,13 @@
 
 struct kb {
     FILE *file;
+    char prev_map[KEY_MAX / 8 + 1];
     char map[KEY_MAX / 8 + 1];
 };
 
 int kb_init(struct kb *kb);
 void kb_update_map(struct kb *kb);
-uint8_t kb_read_map(struct kb *kb, int key_code);
+uint8_t kb_read_map(char map[KEY_MAX / 8 + 1], int key_code);
 void kb_free(struct kb *kb);
 
 #endif
