@@ -12,13 +12,15 @@
 
 #include "global_defines.h"
 
-static FILE *kb_file;
-static char kb_map[KEY_MAX / 8 + 1];
+struct kb {
+    FILE *file;
+    char map[KEY_MAX / 8 + 1];
+};
 
-int kb_init();
-void kb_update_map();
-uint8_t kb_read_map(int key_code);
-void kb_free();
+int kb_init(struct kb *kb);
+void kb_update_map(struct kb *kb);
+uint8_t kb_read_map(struct kb *kb, int key_code);
+void kb_free(struct kb *kb);
 
 #endif
 

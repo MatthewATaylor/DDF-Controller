@@ -16,8 +16,9 @@
 
 #include "global_defines.h"
 #include "gif.h"
-#include "game_test.h"
 #include "kb.h"
+#include "game_test.h"
+#include "game_tetris.h"
 
 #define DO_ETH 1
 #define INTERFACE_NAME "enp2s0"
@@ -265,10 +266,12 @@ int main(int argc, char **argv) {
     uint8_t is_game = 1;
     void *game_obj;
     void (*game_init_func)(void *, uint8_t[LED_ROWS][LED_COLS][LED_CHANNELS]);
-    void (*game_loop_func)(void *, uint8_t[LED_ROWS][LED_COLS][LED_CHANNELS]);
+    void (*game_loop_func)(void *, uint8_t[LED_ROWS][LED_COLS][LED_CHANNELS], struct kb *);
+    struct kb kb;
 
     /* Add all game structs here */
     struct game_test game_test;
+    struct game_tetris game_tetris;
 
     if (argc < 2) {
         printf("Error: Please provide a GIF filename or game mode\n");
@@ -324,6 +327,11 @@ int main(int argc, char **argv) {
         game_init_func = &game_test_init;
         game_loop_func = &game_test_loop;
     }
+    else if (!strcmp(argv[1], "tetris")) {
+        game_obj = &game_tetris;
+        game_init_func = &game_tetris_init;
+        game_loop_func = &game_tetris_loop;
+    }
     else {
         /* Not a game, load GIF file */
         is_game = 0;
@@ -341,7 +349,7 @@ int main(int argc, char **argv) {
     }
 
     if (is_game) {
-        if (kb_init() == ERROR_OUT) {
+        if (kb_init(&kb) == ERROR_OUT) {
             return ERROR_OUT;
         }
        (*game_init_func)(game_obj, color_frame_adj); 
@@ -354,8 +362,8 @@ int main(int argc, char **argv) {
             printf("%f FPS\n", 1000 / (millis - prev_millis));
 
             if (is_game) {
-                kb_update_map();
-                (*game_loop_func)(game_obj, color_frame_adj);
+                kb_update_map(&kb);
+                (*game_loop_func)(game_obj, color_frame_adj, &kb);
 
                 /* Limit game brightness */
                 for (i = 0; i < LED_ROWS; ++i) {
@@ -411,7 +419,7 @@ int main(int argc, char **argv) {
     #endif
 
     if (is_game) {
-        kb_free();
+        kb_free(&kb);
     }
     else {
         gif_free(&gif);

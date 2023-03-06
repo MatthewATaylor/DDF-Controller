@@ -19,7 +19,8 @@ void game_test_init(
 );
 void game_test_loop(
     void *game_test,
-    uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
+    uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],
+    struct kb *kb
 );
 
 #endif
