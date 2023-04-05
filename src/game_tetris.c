@@ -39,10 +39,10 @@ void game_tetris_init(
 
     for (i = 0; i < LED_ROWS; ++i) {
         for (j = 0; j < LED_COLS; ++j) {
-            if (i < BOARD_Y || i > BOARD_Y + BOARD_H || j < BOARD_X || j > BOARD_X + BOARD_W) {
-                color_frame[i][j][0] = 100;
-                color_frame[i][j][1] = 100;
-                color_frame[i][j][2] = 100;
+            if (i < BOARD_Y || i >= BOARD_Y + BOARD_H || j < BOARD_X || j >= BOARD_X + BOARD_W) {
+                color_frame[i][j][0] = 50;
+                color_frame[i][j][1] = 50;
+                color_frame[i][j][2] = 50;
             }
             else {
                 color_frame[i][j][0] = 0;
@@ -76,6 +76,20 @@ void game_tetris_loop(
         }
     }
 
+    if (kb_read_map(kb->map, KEY_UP)) {
+        if (!kb_read_map(kb->prev_map, KEY_UP) || get_millis() - game->key_timer > MS_PER_MOVE) {
+            game->tile_y -= 1;
+            game->key_timer = get_millis();
+        }
+    }
+    else if (kb_read_map(kb->map, KEY_DOWN)) {
+        if (!kb_read_map(kb->prev_map, KEY_DOWN) || get_millis() - game->key_timer > MS_PER_MOVE) {
+            game->tile_y += 1;
+            game->key_timer = get_millis();
+        }
+    }
+   
+
     if (game->tile_x >= BOARD_W_TILES) {
         game->tile_x = BOARD_W_TILES - 1;
     }
@@ -83,17 +97,24 @@ void game_tetris_loop(
         game->tile_x = 0;
     }
 
+    if (game->tile_y >= BOARD_H_TILES) {
+        game->tile_y = BOARD_H_TILES - 1;
+    }
+    else if (game->tile_y < 0) {
+        game->tile_y = 0;
+    }
+
+   
+
     for (i = 0; i < BOARD_H_TILES; ++i) {
         for (j = 0; j < BOARD_W_TILES; ++j) {
             if (i == game->tile_y && j == game->tile_x) {
-                game_tetris_color_tile(color_frame, i, j, 255, 255, 255);
+                game_tetris_color_tile(color_frame, i, j, 0, 255, 0);
             }
             else {
                 game_tetris_color_tile(color_frame, i, j, 0, 0, 0);
             }
         }
     }
-
-    printf("square x: %d\n", game->tile_x);
 }
 

@@ -61,7 +61,7 @@ void color_frame_to_eth(uint16_t led_index) {
 
     /* LEDs snake between rows */
     if (chunk_led_row % 2 == 0) {
-        chunk_led_col = CHUNK_COLS - chunk_led_col;
+        chunk_led_col = CHUNK_COLS - chunk_led_col - 1;
     }
 
     for (i = 0; i < LED_CHANNELS; ++i) {
@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
         if (kb_init(&kb) == ERROR_OUT) {
             return ERROR_OUT;
         }
-       (*game_init_func)(game_obj, color_frame_adj); 
+       (*game_init_func)(game_obj, color_frame); 
     }
 
     #if DO_ETH
@@ -359,13 +359,13 @@ int main(int argc, char **argv) {
 
             if (is_game) {
                 kb_update_map(&kb);
-                (*game_loop_func)(game_obj, color_frame_adj, &kb, spf);
+                (*game_loop_func)(game_obj, color_frame, &kb, spf);
 
                 /* Limit game brightness */
                 for (i = 0; i < LED_ROWS; ++i) {
                     for (j = 0; j < LED_COLS; ++j) {
                         for (k = 0; k < LED_CHANNELS; ++k) {
-                            color_frame_adj[i][j][k] *= GAME_BRIGHTNESS;
+                            color_frame_adj[i][j][k] = color_frame[i][j][k] * GAME_BRIGHTNESS;
                         }
                     }
                 }
