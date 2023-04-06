@@ -32,10 +32,10 @@ void game_tetris_init(
 ) {
     struct game_tetris *game = (struct game_tetris *) game_tetris;
     uint8_t i, j;
+    size_t k;
 
     game->tile_x = 0;
     game->tile_y = 0;
-    game->key_timer = 0;
 
     for (i = 0; i < LED_ROWS; ++i) {
         for (j = 0; j < LED_COLS; ++j) {
@@ -52,6 +52,9 @@ void game_tetris_init(
         }
     }
 
+    for (k = 0; k < KEY_MAX; ++k) {
+        game->key_timers[k] = 0;
+    }
 }
 
 void game_tetris_loop(
@@ -64,32 +67,35 @@ void game_tetris_loop(
     uint8_t i, j;
 
     if (kb_read_map(kb->map, KEY_RIGHT)) {
-        if (!kb_read_map(kb->prev_map, KEY_RIGHT) || get_millis() - game->key_timer > MS_PER_MOVE) {
+        if (!kb_read_map(kb->prev_map, KEY_RIGHT) ||
+                get_millis() - game->key_timers[KEY_RIGHT] > MS_PER_MOVE) {
             game->tile_x += 1;
-            game->key_timer = get_millis();
+            game->key_timers[KEY_RIGHT] = get_millis();
         }
     }
     else if (kb_read_map(kb->map, KEY_LEFT)) {
-        if (!kb_read_map(kb->prev_map, KEY_LEFT) || get_millis() - game->key_timer > MS_PER_MOVE) {
+        if (!kb_read_map(kb->prev_map, KEY_LEFT) ||
+                get_millis() - game->key_timers[KEY_LEFT] > MS_PER_MOVE) {
             game->tile_x -= 1;
-            game->key_timer = get_millis();
+            game->key_timers[KEY_LEFT] = get_millis();
         }
     }
 
     if (kb_read_map(kb->map, KEY_UP)) {
-        if (!kb_read_map(kb->prev_map, KEY_UP) || get_millis() - game->key_timer > MS_PER_MOVE) {
+        if (!kb_read_map(kb->prev_map, KEY_UP) ||
+                get_millis() - game->key_timers[KEY_UP] > MS_PER_MOVE) {
             game->tile_y -= 1;
-            game->key_timer = get_millis();
+            game->key_timers[KEY_UP] = get_millis();
         }
     }
     else if (kb_read_map(kb->map, KEY_DOWN)) {
-        if (!kb_read_map(kb->prev_map, KEY_DOWN) || get_millis() - game->key_timer > MS_PER_MOVE) {
+        if (!kb_read_map(kb->prev_map, KEY_DOWN) ||
+                get_millis() - game->key_timers[KEY_DOWN] > MS_PER_MOVE) {
             game->tile_y += 1;
-            game->key_timer = get_millis();
+            game->key_timers[KEY_DOWN] = get_millis();
         }
     }
    
-
     if (game->tile_x >= BOARD_W_TILES) {
         game->tile_x = BOARD_W_TILES - 1;
     }
@@ -103,8 +109,6 @@ void game_tetris_loop(
     else if (game->tile_y < 0) {
         game->tile_y = 0;
     }
-
-   
 
     for (i = 0; i < BOARD_H_TILES; ++i) {
         for (j = 0; j < BOARD_W_TILES; ++j) {

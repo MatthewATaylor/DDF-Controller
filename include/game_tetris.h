@@ -2,7 +2,9 @@
 #define GAME_TETRIS_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <math.h>
+#include <linux/input.h>
 
 #include "global_defines.h"
 #include "util.h"
@@ -11,7 +13,7 @@
 struct game_tetris {
     int8_t tile_x;
     int8_t tile_y;
-    double key_timer;
+    double key_timers[KEY_MAX];
 };
 
 void game_tetris_color_tile(
