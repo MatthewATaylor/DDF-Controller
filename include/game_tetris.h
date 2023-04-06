@@ -10,6 +10,11 @@
 #include "util.h"
 #include "kb.h"
 
+struct game_tetris_piece {
+    uint8_t y_origin;
+    uint8_t shape[4][4][4];
+};
+
 struct game_tetris {
     int8_t tile_x;
     int8_t tile_y;
