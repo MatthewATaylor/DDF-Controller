@@ -18,7 +18,7 @@
 #include "gif.h"
 #include "kb.h"
 #include "game_test.h"
-#include "game_tetris.h"
+#include "tetris.h"
 
 #define DO_ETH 1
 #define INTERFACE_NAME "enp2s0"
@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
 
     /* Add all game structs here */
     struct game_test game_test;
-    struct game_tetris game_tetris;
+    struct tetris tetris;
 
     if (argc < 2) {
         printf("Error: Please provide a GIF filename or game mode\n");
@@ -324,9 +324,9 @@ int main(int argc, char **argv) {
         game_loop_func = &game_test_loop;
     }
     else if (!strcmp(argv[1], "tetris")) {
-        game_obj = &game_tetris;
-        game_init_func = &game_tetris_init;
-        game_loop_func = &game_tetris_loop;
+        game_obj = &tetris;
+        game_init_func = &tetris_init;
+        game_loop_func = &tetris_loop;
     }
     else {
         /* Not a game, load GIF file */
