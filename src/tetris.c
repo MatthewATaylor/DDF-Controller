@@ -184,6 +184,31 @@ void tetris_init(
     uint8_t i, j;
     size_t k;
 
+    int8_t jlstz_wall_kick_inc[4][4][2] = {
+        { {-1,  0}, {-1,  1}, { 0, -2}, {-1, -2} },
+        { { 1,  0}, { 1, -1}, { 0,  2}, { 1,  2} },
+        { { 1,  0}, { 1,  1}, { 0, -2}, { 1, -2} },
+        { {-1,  0}, {-1, -1}, { 0,  2}, {-1,  2} }
+    };
+    int8_t jlstz_wall_kick_dec[4][4][2] = {
+        { { 1,  0}, { 1,  1}, { 0, -2}, { 1, -2} },
+        { { 1,  0}, { 1, -1}, { 0,  2}, { 1,  2} },
+        { {-1,  0}, {-1,  1}, { 0, -2}, {-1, -2} },
+        { {-1,  0}, {-1, -1}, { 0,  2}, {-1,  2} }
+    };
+    int8_t i_wall_kick_inc[4][4][2] = {
+        { {-2,  0}, { 1,  0}, {-2, -1}, { 1,  2} },
+        { {-1,  0}, { 2,  0}, {-1,  2}, { 2, -1} },
+        { { 2,  0}, {-1,  0}, { 2,  1}, {-1, -2} },
+        { { 1,  0}, {-2,  0}, { 1, -2}, {-2,  1} }
+    };
+    int8_t i_wall_kick_dec[4][4][2] = {
+        { {-1,  0}, { 2,  0}, {-1,  2}, { 2, -1} },
+        { { 2,  0}, {-1,  0}, { 2,  1}, {-1, -2} },
+        { { 1,  0}, {-2,  0}, { 1, -2}, {-2,  1} },
+        { {-2,  0}, { 1,  0}, {-2, -1}, { 1,  2} }
+    };
+
     for (k = 0; k < KEY_MAX; ++k) {
         game->key_timers[k] = 0;
     }
@@ -198,12 +223,18 @@ void tetris_init(
     game->current_y = 0;
     game->current_rotation = 0;
 
-    game->tetrominoes[0] = &tetris_tetromino_i;
-    game->tetrominoes[1] = &tetris_tetromino_j;
-    game->tetrominoes[2] = &tetris_tetromino_l;
+    game->tetrominoes[TETRIS_I_INDEX] = &tetris_tetromino_i;
+    game->tetrominoes[TETRIS_J_INDEX] = &tetris_tetromino_j;
+    game->tetrominoes[TETRIS_L_INDEX] = &tetris_tetromino_l;
     game->tetromino_index = 0;
 
     srand(time(0));
+
+    memcpy(game->jlstz_wall_kick_inc, jlstz_wall_kick_inc, sizeof(int8_t) * 4 * 4 * 2);
+    memcpy(game->jlstz_wall_kick_dec, jlstz_wall_kick_dec, sizeof(int8_t) * 4 * 4 * 2);
+    memcpy(game->i_wall_kick_inc, i_wall_kick_inc, sizeof(int8_t) * 4 * 4 * 2);
+    memcpy(game->i_wall_kick_dec, i_wall_kick_dec, sizeof(int8_t) * 4 * 4 * 2);
+
 
     for (i = 0; i < LED_ROWS; ++i) {
         for (j = 0; j < LED_COLS; ++j) {
@@ -235,9 +266,10 @@ void tetris_loop(
     struct tetris *game = (struct tetris *) tetris;
     uint8_t i, j;
     uint8_t new_rotation;
+    int8_t (*wall_kick)[4][2];
 
-    if (kb_read_map(kb->map, KEY_ENTER)) {
-        if (!kb_read_map(kb->prev_map, KEY_ENTER)) {
+    if (kb_read_map(kb->map, KEY_RIGHTSHIFT)) {
+        if (!kb_read_map(kb->prev_map, KEY_RIGHTSHIFT)) {
             tetris_spawn(game);
         }
     }
@@ -281,33 +313,84 @@ void tetris_loop(
         }
     }
 
-    if (kb_read_map(kb->map, KEY_Z)) {
-        if (!kb_read_map(kb->prev_map, KEY_Z) ||
-                get_millis() - game->key_timers[KEY_Z] > TETRIS_MS_PER_MOVE) {
-            if (game->current_rotation == 0) {
-                new_rotation = 3;
-            }
-            else {
-                new_rotation = game->current_rotation - 1;
-            }
-            if (!tetris_is_collision(game, game->current_x, game->current_y, new_rotation)) {
-                game->current_rotation = new_rotation;
-                game->key_timers[KEY_Z] = get_millis();
+    if (game->tetromino_index != TETRIS_O_INDEX) {
+        if (kb_read_map(kb->map, KEY_Z)) {
+            if (!kb_read_map(kb->prev_map, KEY_Z) ||
+                    get_millis() - game->key_timers[KEY_Z] > TETRIS_MS_PER_MOVE) {
+                if (game->tetromino_index == TETRIS_I_INDEX) {
+                    wall_kick = game->i_wall_kick_dec;
+                }
+                else {
+                    wall_kick = game->jlstz_wall_kick_dec;
+                }
+
+                if (game->current_rotation == 0) {
+                    new_rotation = 3;
+                }
+                else {
+                    new_rotation = game->current_rotation - 1;
+                }
+
+                if (!tetris_is_collision(game, game->current_x, game->current_y, new_rotation)) {
+                    game->current_rotation = new_rotation;
+                    game->key_timers[KEY_Z] = get_millis();
+                }
+                else {
+                    for (i = 0; i < 4; ++i) {
+                        /* Attempt each wall kick option */
+                        if (!tetris_is_collision(
+                                game,
+                                game->current_x + wall_kick[game->current_rotation][i][0],
+                                game->current_y - wall_kick[game->current_rotation][i][1],
+                                new_rotation)) {
+                            game->current_x += wall_kick[game->current_rotation][i][0];
+                            game->current_y -= wall_kick[game->current_rotation][i][1];
+                            game->current_rotation = new_rotation;
+                            game->key_timers[KEY_Z] = get_millis();
+                            break;
+                        }
+                    }
+                }
             }
         }
-    }
-    if (kb_read_map(kb->map, KEY_X)) {
-        if (!kb_read_map(kb->prev_map, KEY_X) ||
-                get_millis() - game->key_timers[KEY_X] > TETRIS_MS_PER_MOVE) {
-            if (game->current_rotation == 3) {
-                new_rotation = 0;
-            }
-            else {
-                new_rotation = game->current_rotation + 1;
-            }
-            if (!tetris_is_collision(game, game->current_x, game->current_y, new_rotation)) {
-                game->current_rotation = new_rotation;
-                game->key_timers[KEY_X] = get_millis();
+        if (kb_read_map(kb->map, KEY_X)) {
+            if (!kb_read_map(kb->prev_map, KEY_X) ||
+                    get_millis() - game->key_timers[KEY_X] > TETRIS_MS_PER_MOVE) {
+                if (game->tetromino_index == TETRIS_I_INDEX) {
+                    wall_kick = game->i_wall_kick_inc;
+                }
+                else {
+                    wall_kick = game->jlstz_wall_kick_inc;
+                }
+
+                if (game->current_rotation == 3) {
+                    new_rotation = 0;
+                }
+                else {
+                    new_rotation = game->current_rotation + 1;
+                }
+
+                if (!tetris_is_collision(game, game->current_x, game->current_y, new_rotation)) {
+                    game->current_rotation = new_rotation;
+                    game->key_timers[KEY_X] = get_millis();
+                }
+                else {
+                    for (i = 0; i < 4; ++i) {
+                        /* Attempt each wall kick option */
+                        if (!tetris_is_collision(
+                                game,
+                                game->current_x + wall_kick[game->current_rotation][i][0],
+                                game->current_y - wall_kick[game->current_rotation][i][1],
+                                new_rotation)) {
+                            game->current_x += wall_kick[game->current_rotation][i][0];
+                            game->current_y -= wall_kick[game->current_rotation][i][1];
+                            game->current_rotation = new_rotation;
+                            game->key_timers[KEY_X] = get_millis();
+                            break;
+                        }
+                    }
+
+                }
             }
         }
     }

@@ -20,7 +20,14 @@
 #define TETRIS_BOARD_H 60
 #define TETRIS_BOARD_W_TILES 10
 #define TETRIS_BOARD_H_TILES 20
-#define TETRIS_MS_PER_MOVE 175
+#define TETRIS_MS_PER_MOVE 250
+#define TETRIS_I_INDEX 0
+#define TETRIS_J_INDEX 1
+#define TETRIS_L_INDEX 2
+#define TETRIS_O_INDEX 3
+#define TETRIS_S_INDEX 4
+#define TETRIS_T_INDEX 5
+#define TETRIS_Z_INDEX 6
 
 struct tetris_tetromino {
     uint8_t y_origin;
@@ -39,6 +46,12 @@ struct tetris {
 
     struct tetris_tetromino *tetrominoes[7];
     uint8_t tetromino_index;
+
+    /* 1st index: current_rotation, 2nd index: attempt number, 3rd index: x/y */
+    int8_t jlstz_wall_kick_inc[4][4][2];
+    int8_t jlstz_wall_kick_dec[4][4][2];
+    int8_t i_wall_kick_inc[4][4][2];
+    int8_t i_wall_kick_dec[4][4][2];
 };
 
 void tetris_color_tile(
