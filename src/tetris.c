@@ -165,13 +165,15 @@ void tetris_set_tetromino(struct tetris *game) {
 }
 
 void tetris_spawn(struct tetris *game) {
-    game->tetromino_index = 2;
+    game->tetromino_index = rand() % 3;
 
     game->current_x = 3;
     game->current_y = -game->tetrominoes[game->tetromino_index]->y_origin;
     game->current_rotation = 0;
 
-    tetris_set_tetromino(game);
+    if (!tetris_is_collision(game, game->current_x, game->current_y, game->current_rotation)) {
+        tetris_set_tetromino(game);
+    }
 }
 
 void tetris_init(
@@ -200,6 +202,8 @@ void tetris_init(
     game->tetrominoes[1] = &tetris_tetromino_j;
     game->tetrominoes[2] = &tetris_tetromino_l;
     game->tetromino_index = 0;
+
+    srand(time(0));
 
     for (i = 0; i < LED_ROWS; ++i) {
         for (j = 0; j < LED_COLS; ++j) {
@@ -231,6 +235,12 @@ void tetris_loop(
     struct tetris *game = (struct tetris *) tetris;
     uint8_t i, j;
     uint8_t new_rotation;
+
+    if (kb_read_map(kb->map, KEY_ENTER)) {
+        if (!kb_read_map(kb->prev_map, KEY_ENTER)) {
+            tetris_spawn(game);
+        }
+    }
 
     tetris_clear_tetromino(game);
 
@@ -270,6 +280,7 @@ void tetris_loop(
             }
         }
     }
+
     if (kb_read_map(kb->map, KEY_Z)) {
         if (!kb_read_map(kb->prev_map, KEY_Z) ||
                 get_millis() - game->key_timers[KEY_Z] > TETRIS_MS_PER_MOVE) {
@@ -309,9 +320,9 @@ void tetris_loop(
                 tetris_color_tile(
                     color_frame,
                     i, j,
-                    game->tetrominoes[game->tetromino_index]->r,
-                    game->tetrominoes[game->tetromino_index]->g,
-                    game->tetrominoes[game->tetromino_index]->b
+                    game->tetrominoes[game->board[i][j]]->r,
+                    game->tetrominoes[game->board[i][j]]->g,
+                    game->tetrominoes[game->board[i][j]]->b
                 );
             }
             else {

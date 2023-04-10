@@ -1,8 +1,10 @@
 #ifndef TETRIS_H
 #define TETRIS_H
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <time.h>
 #include <math.h>
 #include <linux/input.h>
 
