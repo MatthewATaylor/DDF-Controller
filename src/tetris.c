@@ -57,7 +57,7 @@ uint8_t tetris_is_collision(struct tetris *game, int8_t new_x, int8_t new_y) {
         for (j = new_x; j < new_x + 4; ++j) {
             if (game->tetrominoes[game->tetromino_index]->shape[game->current_rotation][i - new_y][j - new_x]) {
                 /* Tile filled by current tetromino */
-                if (i >= 0 && i < TETRIS_BOARD_W_TILES && j >= 0 && j < TETRIS_BOARD_H_TILES) {
+                if (i >= 0 && i < TETRIS_BOARD_H_TILES && j >= 0 && j < TETRIS_BOARD_W_TILES) {
                     /* Tile on game board */
                     if (game->board[i][j] != -1) {
                         /* Tile filled by existing tetromino */
@@ -91,8 +91,8 @@ void tetris_set_tetromino(struct tetris *game) {
 
     for (i = game->current_y; i < game->current_y + 4; ++i) {
         for (j = game->current_x; j < game->current_x + 4; ++j) {
-            if (i >= 0 && i < TETRIS_BOARD_W_TILES &&
-                    j >= 0 && j < TETRIS_BOARD_H_TILES &&
+            if (i >= 0 && i < TETRIS_BOARD_H_TILES &&
+                    j >= 0 && j < TETRIS_BOARD_W_TILES &&
                     game->tetrominoes[game->tetromino_index]->
                         shape[game->current_rotation][i - game->current_y][j - game->current_x]) {
                 game->board[i][j] = game->tetromino_index;
@@ -164,18 +164,15 @@ void tetris_loop(
     float spf
 ) {
     struct tetris *game = (struct tetris *) tetris;
-    int8_t new_x, new_y;
     uint8_t i, j;
 
-    new_x = game->current_x;
-    new_y = game->current_y;
+    tetris_clear_tetromino(game);
 
     if (kb_read_map(kb->map, KEY_RIGHT)) {
         if (!kb_read_map(kb->prev_map, KEY_RIGHT) ||
                 get_millis() - game->key_timers[KEY_RIGHT] > TETRIS_MS_PER_MOVE) {
-            new_x = game->current_x + 1;
-            if (!tetris_is_collision(game, new_x, new_y)) {
-                game->current_x = new_x;
+            if (!tetris_is_collision(game, game->current_x + 1, game->current_y)) {
+                game->current_x += 1;
                 game->key_timers[KEY_RIGHT] = get_millis();
             }
         }
@@ -183,9 +180,8 @@ void tetris_loop(
     if (kb_read_map(kb->map, KEY_LEFT)) {
         if (!kb_read_map(kb->prev_map, KEY_LEFT) ||
                 get_millis() - game->key_timers[KEY_LEFT] > TETRIS_MS_PER_MOVE) {
-            new_x = game->current_x - 1;
-            if (!tetris_is_collision(game, new_x, new_y)) {
-                game->current_x = new_x;
+            if (!tetris_is_collision(game, game->current_x - 1, game->current_y)) {
+                game->current_x -= 1;
                 game->key_timers[KEY_LEFT] = get_millis();
             }
         }
@@ -193,9 +189,8 @@ void tetris_loop(
     if (kb_read_map(kb->map, KEY_UP)) {
         if (!kb_read_map(kb->prev_map, KEY_UP) ||
                 get_millis() - game->key_timers[KEY_UP] > TETRIS_MS_PER_MOVE) {
-            new_y = game->current_y - 1;
-            if (!tetris_is_collision(game, new_x, new_y)) {
-                game->current_y = new_y;
+            if (!tetris_is_collision(game, game->current_x, game->current_y - 1)) {
+                game->current_y -= 1;
                 game->key_timers[KEY_UP] = get_millis();
             }
         }
@@ -203,13 +198,14 @@ void tetris_loop(
     if (kb_read_map(kb->map, KEY_DOWN)) {
         if (!kb_read_map(kb->prev_map, KEY_DOWN) ||
                 get_millis() - game->key_timers[KEY_DOWN] > TETRIS_MS_PER_MOVE) {
-            new_y = game->current_y + 1;
-            if (!tetris_is_collision(game, new_x, new_y)) {
-                game->current_y = new_y;
+            if (!tetris_is_collision(game, game->current_x, game->current_y + 1)) {
+                game->current_y += 1;
                 game->key_timers[KEY_DOWN] = get_millis();
             }
         }
     }
+
+    tetris_set_tetromino(game);
 
     for (i = 0; i < TETRIS_BOARD_H_TILES; ++i) {
         for (j = 0; j < TETRIS_BOARD_W_TILES; ++j) {
