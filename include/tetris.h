@@ -23,16 +23,20 @@
 struct tetris_tetromino {
     uint8_t y_origin;
     uint8_t shape[4][4][4];
+    uint8_t r, g, b;
 };
 
 struct tetris {
-    int8_t tile_x;
-    int8_t tile_y;
     double key_timers[KEY_MAX];
-    uint8_t board[TETRIS_BOARD_H_TILES][TETRIS_BOARD_W_TILES];
-    int8_t current_x;
-    int8_t current_y;
-    struct tetris_tetromino *current_tetromino;
+    
+    /* -1: unfilled tile, else: tetromino index */
+    int8_t board[TETRIS_BOARD_H_TILES][TETRIS_BOARD_W_TILES];
+
+    int8_t current_x, current_y;
+    uint8_t current_rotation;
+
+    struct tetris_tetromino *tetrominoes[7];
+    uint8_t tetromino_index;
 };
 
 void tetris_color_tile(
@@ -41,10 +45,17 @@ void tetris_color_tile(
     uint8_t r, uint8_t g, uint8_t b
 );
 
+uint8_t tetris_is_collision(struct tetris *game, int8_t new_x, int8_t new_y);
+void tetris_clear_tetromino(struct tetris *game);
+void tetris_set_tetromino(struct tetris *game);
+
+void tetris_spawn(struct tetris *game);
+
 void tetris_init(
     void *tetris,
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
 );
+
 void tetris_loop(
     void *tetris,
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],
