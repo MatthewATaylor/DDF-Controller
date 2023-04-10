@@ -45,8 +45,13 @@ void tetris_color_tile(
     uint8_t r, uint8_t g, uint8_t b
 );
 
-uint8_t tetris_is_collision(struct tetris *game, int8_t new_x, int8_t new_y);
+uint8_t tetris_is_collision(
+    struct tetris *game,
+    int8_t new_x, int8_t new_y, uint8_t new_rotation
+);
+
 void tetris_clear_tetromino(struct tetris *game);
+
 void tetris_set_tetromino(struct tetris *game);
 
 void tetris_spawn(struct tetris *game);
