@@ -21,6 +21,7 @@
 #define TETRIS_BOARD_W_TILES 10
 #define TETRIS_BOARD_H_TILES 20
 #define TETRIS_MS_PER_MOVE 250
+#define TETRIS_BG_LEVEL 30
 #define TETRIS_I_INDEX 0
 #define TETRIS_J_INDEX 1
 #define TETRIS_L_INDEX 2
@@ -52,7 +53,15 @@ struct tetris {
     int8_t jlstz_wall_kick_dec[4][4][2];
     int8_t i_wall_kick_inc[4][4][2];
     int8_t i_wall_kick_dec[4][4][2];
+
+    double bg_offset;
+    double bg_prev_time;
 };
+
+void tetris_animate_bg(
+    struct tetris *game,
+    uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
+);
 
 void tetris_color_tile(
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],

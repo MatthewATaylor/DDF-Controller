@@ -211,6 +211,50 @@ static struct tetris_tetromino tetris_tetromino_z = {
     255, 0, 0
 };
 
+void tetris_animate_bg(
+    struct tetris *game,
+    uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
+) {
+    uint8_t i, j;
+    uint16_t adj_i;
+    float cos_1, cos_2, cos_3;
+
+    game->bg_offset += (get_millis() - game->bg_prev_time) / 10.0;
+    while (game->bg_offset >= LED_ROWS) {
+        game->bg_offset -= LED_ROWS;
+    }
+    game->bg_prev_time = get_millis();
+    
+    for (i = 0; i < LED_ROWS; ++i) {
+        cos_1 = cos(M_PI * (3 * i / (float) LED_ROWS));
+        cos_2 = cos(M_PI * 3 * (i - LED_ROWS / 3.0f) / (float) LED_ROWS);
+        cos_3 = cos(M_PI * 3 * (i - 2 * LED_ROWS / 3.0f) / (float) LED_ROWS);
+
+        adj_i = i + (uint8_t) game->bg_offset;
+        if (adj_i >= LED_ROWS) {
+            adj_i -= LED_ROWS;
+        }
+
+        for (j = 0; j < LED_COLS; ++j) {
+            if (i < LED_ROWS / 3) {
+                color_frame[adj_i][j][0] = -TETRIS_BG_LEVEL * cos_1 + TETRIS_BG_LEVEL;
+                color_frame[adj_i][j][1] =  TETRIS_BG_LEVEL * cos_1 + TETRIS_BG_LEVEL;
+                color_frame[adj_i][j][2] =  0;
+            }
+            else if (i < 2 * LED_ROWS / 3) {
+                color_frame[adj_i][j][0] =  TETRIS_BG_LEVEL * cos_2 + TETRIS_BG_LEVEL;
+                color_frame[adj_i][j][1] =  0;
+                color_frame[adj_i][j][2] = -TETRIS_BG_LEVEL * cos_2 + TETRIS_BG_LEVEL;
+            }
+            else {
+                color_frame[adj_i][j][0] =  0;
+                color_frame[adj_i][j][1] = -TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
+                color_frame[adj_i][j][2] =  TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
+            }
+        }
+    }
+}
+
 void tetris_color_tile(
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],
     uint8_t row, uint8_t col,
@@ -353,6 +397,9 @@ void tetris_init(
 
     game->tetromino_index = 0;
 
+    game->bg_offset = 0;
+    game->bg_prev_time = get_millis();
+
     srand(time(0));
 
     memcpy(game->jlstz_wall_kick_inc, jlstz_wall_kick_inc, sizeof(int8_t) * 4 * 4 * 2);
@@ -362,19 +409,9 @@ void tetris_init(
 
     for (i = 0; i < LED_ROWS; ++i) {
         for (j = 0; j < LED_COLS; ++j) {
-            if (i < TETRIS_BOARD_Y || 
-                    i >= TETRIS_BOARD_Y + TETRIS_BOARD_H || 
-                    j < TETRIS_BOARD_X || 
-                    j >= TETRIS_BOARD_X + TETRIS_BOARD_W) {
-                color_frame[i][j][0] = 50;
-                color_frame[i][j][1] = 50;
-                color_frame[i][j][2] = 50;
-            }
-            else {
-                color_frame[i][j][0] = 0;
-                color_frame[i][j][1] = 0;
-                color_frame[i][j][2] = 0;
-            }
+            color_frame[i][j][0] = 0;
+            color_frame[i][j][1] = 0;
+            color_frame[i][j][2] = 0;
         }
     }
 
@@ -391,6 +428,8 @@ void tetris_loop(
     uint8_t i, j;
     uint8_t new_rotation;
     int8_t (*wall_kick)[4][2];
+
+    tetris_animate_bg(game, color_frame);
 
     if (kb_read_map(kb->map, KEY_RIGHTSHIFT)) {
         if (!kb_read_map(kb->prev_map, KEY_RIGHTSHIFT)) {
