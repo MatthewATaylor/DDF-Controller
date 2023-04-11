@@ -322,7 +322,6 @@ void tetris_clear_rows(struct tetris *game) {
             }
             else {
                 if (j == TETRIS_BOARD_W_TILES - 1) {
-                    printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n\n\n\n\n\naaaaaaaaaaaaaa\n");
                     /* Row is full - shift tiles down */
                     for (k = i; k > 0; --k) {
                         for (l = 0; l < TETRIS_BOARD_W_TILES; ++l) {
