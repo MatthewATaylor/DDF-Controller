@@ -312,6 +312,29 @@ uint8_t tetris_is_collision(
     return 0;
 }
 
+void tetris_clear_rows(struct tetris *game) {
+    uint8_t i, j, k, l;
+
+    for (i = 0; i < TETRIS_BOARD_H_TILES; ++i) {
+        for (j = 0; j < TETRIS_BOARD_W_TILES; ++j) {
+            if (game->board[i][j] == -1) {
+                break;
+            }
+            else {
+                if (j == TETRIS_BOARD_W_TILES - 1) {
+                    printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n\n\n\n\n\naaaaaaaaaaaaaa\n");
+                    /* Row is full - shift tiles down */
+                    for (k = i; k > 0; --k) {
+                        for (l = 0; l < TETRIS_BOARD_W_TILES; ++l) {
+                            game->board[k][l] = game->board[k - 1][l];
+                        }
+                    }
+                }
+            }
+        } 
+    }
+}
+
 void tetris_clear_tetromino(struct tetris *game) {
     uint8_t i, j;
 
@@ -427,6 +450,7 @@ void tetris_init(
     }
 
     tetris_spawn(game);
+    game->prev_drop_time = get_millis();
 }
 
 void tetris_loop(
@@ -439,6 +463,8 @@ void tetris_loop(
     uint8_t i, j;
     uint8_t new_rotation;
     int8_t (*wall_kick)[4][2];
+    double ms_per_drop;
+    uint8_t is_drop_end = 0;
 
     tetris_animate_bg(game, color_frame);
 
@@ -468,6 +494,7 @@ void tetris_loop(
             }
         }
     }
+    /*
     if (kb_read_map(kb->map, KEY_UP)) {
         if (!kb_read_map(kb->prev_map, KEY_UP) ||
                 get_millis() - game->key_timers[KEY_UP] > TETRIS_MS_PER_MOVE) {
@@ -486,6 +513,7 @@ void tetris_loop(
             }
         }
     }
+    */
 
     if (game->tetromino_index != TETRIS_O_INDEX) {
         if (kb_read_map(kb->map, KEY_Z)) {
@@ -569,7 +597,28 @@ void tetris_loop(
         }
     }
 
-    tetris_set_tetromino(game);
+    if (kb_read_map(kb->map, KEY_DOWN)) {
+        ms_per_drop = TETRIS_BASE_MS_PER_DROP / 5.0;
+    }
+    else {
+        ms_per_drop = TETRIS_BASE_MS_PER_DROP;
+    }
+    if (get_millis() - game->prev_drop_time > ms_per_drop) {
+        game->prev_drop_time = get_millis();
+        if (!tetris_is_collision(game, game->current_x, game->current_y + 1, game->current_rotation)) {
+            game->current_y += 1;
+        }
+        else {
+            tetris_set_tetromino(game);
+            tetris_clear_rows(game);
+            tetris_spawn(game);
+            is_drop_end = 1;
+        }
+    }
+
+    if (!is_drop_end) {
+        tetris_set_tetromino(game);
+    }
 
     for (i = 0; i < TETRIS_BOARD_H_TILES; ++i) {
         for (j = 0; j < TETRIS_BOARD_W_TILES; ++j) {

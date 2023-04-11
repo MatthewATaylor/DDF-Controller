@@ -22,6 +22,7 @@
 #define TETRIS_BOARD_H_TILES 20
 #define TETRIS_MS_PER_MOVE 250
 #define TETRIS_BG_LEVEL 30
+#define TETRIS_BASE_MS_PER_DROP 500
 #define TETRIS_I_INDEX 0
 #define TETRIS_J_INDEX 1
 #define TETRIS_L_INDEX 2
@@ -56,6 +57,8 @@ struct tetris {
 
     double bg_offset;
     double bg_prev_time;
+
+    double prev_drop_time;
 };
 
 void tetris_animate_bg(
@@ -73,6 +76,8 @@ uint8_t tetris_is_collision(
     struct tetris *game,
     int8_t new_x, int8_t new_y, uint8_t new_rotation
 );
+
+void tetris_clear_rows(struct tetris *game);
 
 void tetris_clear_tetromino(struct tetris *game);
 
