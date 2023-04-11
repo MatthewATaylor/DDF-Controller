@@ -88,7 +88,7 @@ static struct tetris_tetromino tetris_tetromino_l = {
             {0, 0, 0, 0}
         }
     },
-    255, 64, 0
+    255, 40, 0
 };
 static struct tetris_tetromino tetris_tetromino_o = {
     0,
@@ -251,6 +251,17 @@ void tetris_animate_bg(
                 color_frame[adj_i][j][1] = -TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
                 color_frame[adj_i][j][2] =  TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
             }
+        }
+    }
+
+    for (j = 0; j < 3; ++j) {
+        for (i = TETRIS_BOARD_Y - 1; i <= TETRIS_BOARD_Y + TETRIS_BOARD_H; ++i) {
+            color_frame[i][TETRIS_BOARD_X - 1][j] = TETRIS_BG_LEVEL;
+            color_frame[i][TETRIS_BOARD_X + TETRIS_BOARD_W][j] = TETRIS_BG_LEVEL;
+        }
+        for (i = TETRIS_BOARD_X - 1; i <= TETRIS_BOARD_X + TETRIS_BOARD_W; ++i) {
+            color_frame[TETRIS_BOARD_Y - 1][i][j] = TETRIS_BG_LEVEL * (i % 2);
+            color_frame[TETRIS_BOARD_Y + TETRIS_BOARD_H][i][j] = TETRIS_BG_LEVEL * (i % 2);
         }
     }
 }
