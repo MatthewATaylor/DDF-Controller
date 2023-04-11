@@ -90,6 +90,126 @@ static struct tetris_tetromino tetris_tetromino_l = {
     },
     255, 64, 0
 };
+static struct tetris_tetromino tetris_tetromino_o = {
+    0,
+    {
+        {
+            {0, 1, 1, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 1, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 1, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 1, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        }
+    },
+    255, 150, 0
+};
+static struct tetris_tetromino tetris_tetromino_s = {
+    0,
+    {
+        {
+            {0, 1, 1, 0},
+            {1, 1, 0, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 0, 0},
+            {0, 1, 1, 0},
+            {0, 0, 1, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 0, 0, 0},
+            {0, 1, 1, 0},
+            {1, 1, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {1, 0, 0, 0},
+            {1, 1, 0, 0},
+            {0, 1, 0, 0},
+            {0, 0, 0, 0}
+        }
+    },
+    0, 255, 0
+};
+static struct tetris_tetromino tetris_tetromino_t = {
+    0,
+    {
+        {
+            {0, 1, 0, 0},
+            {1, 1, 1, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 0, 0},
+            {0, 1, 1, 0},
+            {0, 1, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 0, 0, 0},
+            {1, 1, 1, 0},
+            {0, 1, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 0, 0},
+            {1, 1, 0, 0},
+            {0, 1, 0, 0},
+            {0, 0, 0, 0}
+        }
+    },
+    128, 0, 255
+};
+static struct tetris_tetromino tetris_tetromino_z = {
+    0,
+    {
+        {
+            {1, 1, 0, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 0, 1, 0},
+            {0, 1, 1, 0},
+            {0, 1, 0, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 0, 0, 0},
+            {1, 1, 0, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0}
+        },
+        {
+            {0, 1, 0, 0},
+            {1, 1, 0, 0},
+            {1, 0, 0, 0},
+            {0, 0, 0, 0}
+        }
+    },
+    255, 0, 0
+};
 
 void tetris_color_tile(
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],
@@ -165,7 +285,7 @@ void tetris_set_tetromino(struct tetris *game) {
 }
 
 void tetris_spawn(struct tetris *game) {
-    game->tetromino_index = rand() % 3;
+    game->tetromino_index = rand() % 7;
 
     game->current_x = 3;
     game->current_y = -game->tetrominoes[game->tetromino_index]->y_origin;
@@ -226,6 +346,11 @@ void tetris_init(
     game->tetrominoes[TETRIS_I_INDEX] = &tetris_tetromino_i;
     game->tetrominoes[TETRIS_J_INDEX] = &tetris_tetromino_j;
     game->tetrominoes[TETRIS_L_INDEX] = &tetris_tetromino_l;
+    game->tetrominoes[TETRIS_O_INDEX] = &tetris_tetromino_o;
+    game->tetrominoes[TETRIS_S_INDEX] = &tetris_tetromino_s;
+    game->tetrominoes[TETRIS_T_INDEX] = &tetris_tetromino_t;
+    game->tetrominoes[TETRIS_Z_INDEX] = &tetris_tetromino_z;
+
     game->tetromino_index = 0;
 
     srand(time(0));
@@ -234,7 +359,6 @@ void tetris_init(
     memcpy(game->jlstz_wall_kick_dec, jlstz_wall_kick_dec, sizeof(int8_t) * 4 * 4 * 2);
     memcpy(game->i_wall_kick_inc, i_wall_kick_inc, sizeof(int8_t) * 4 * 4 * 2);
     memcpy(game->i_wall_kick_dec, i_wall_kick_dec, sizeof(int8_t) * 4 * 4 * 2);
-
 
     for (i = 0; i < LED_ROWS; ++i) {
         for (j = 0; j < LED_COLS; ++j) {
