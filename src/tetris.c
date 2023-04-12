@@ -236,20 +236,28 @@ void tetris_animate_bg(
         }
 
         for (j = 0; j < LED_COLS; ++j) {
-            if (i < LED_ROWS / 3) {
-                color_frame[adj_i][j][0] = -TETRIS_BG_LEVEL * cos_1 + TETRIS_BG_LEVEL;
-                color_frame[adj_i][j][1] =  TETRIS_BG_LEVEL * cos_1 + TETRIS_BG_LEVEL;
-                color_frame[adj_i][j][2] =  0;
-            }
-            else if (i < 2 * LED_ROWS / 3) {
-                color_frame[adj_i][j][0] =  TETRIS_BG_LEVEL * cos_2 + TETRIS_BG_LEVEL;
-                color_frame[adj_i][j][1] =  0;
-                color_frame[adj_i][j][2] = -TETRIS_BG_LEVEL * cos_2 + TETRIS_BG_LEVEL;
+            if (adj_i < TETRIS_BOARD_Y || adj_i >= TETRIS_BOARD_Y + TETRIS_BOARD_H ||
+                    j < TETRIS_BOARD_X || j >= TETRIS_BOARD_X + TETRIS_BOARD_W) {
+                if (i < LED_ROWS / 3) {
+                    color_frame[adj_i][j][0] = -TETRIS_BG_LEVEL * cos_1 + TETRIS_BG_LEVEL;
+                    color_frame[adj_i][j][1] =  TETRIS_BG_LEVEL * cos_1 + TETRIS_BG_LEVEL;
+                    color_frame[adj_i][j][2] =  0;
+                }
+                else if (i < 2 * LED_ROWS / 3) {
+                    color_frame[adj_i][j][0] =  TETRIS_BG_LEVEL * cos_2 + TETRIS_BG_LEVEL;
+                    color_frame[adj_i][j][1] =  0;
+                    color_frame[adj_i][j][2] = -TETRIS_BG_LEVEL * cos_2 + TETRIS_BG_LEVEL;
+                }
+                else {
+                    color_frame[adj_i][j][0] =  0;
+                    color_frame[adj_i][j][1] = -TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
+                    color_frame[adj_i][j][2] =  TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
+                }
             }
             else {
-                color_frame[adj_i][j][0] =  0;
-                color_frame[adj_i][j][1] = -TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
-                color_frame[adj_i][j][2] =  TETRIS_BG_LEVEL * cos_3 + TETRIS_BG_LEVEL;
+                color_frame[adj_i][j][0] = 0;
+                color_frame[adj_i][j][1] = 0;
+                color_frame[adj_i][j][2] = 0;
             }
         }
     }
@@ -361,6 +369,18 @@ void tetris_set_tetromino(struct tetris *game) {
     }
 }
 
+void tetris_reset(struct tetris *game) {
+    uint8_t i, j;
+
+    for (i = 0; i < TETRIS_BOARD_H_TILES; ++i) {
+        for (j = 0; j < TETRIS_BOARD_W_TILES; ++j) {
+            game->board[i][j] = -1;
+        }
+    }
+
+    game->game_has_started = 0;
+}
+
 void tetris_spawn(struct tetris *game) {
     game->tetromino_index = rand() % 7;
 
@@ -370,6 +390,9 @@ void tetris_spawn(struct tetris *game) {
 
     if (!tetris_is_collision(game, game->current_x, game->current_y, game->current_rotation)) {
         tetris_set_tetromino(game);
+    }
+    else {
+        tetris_reset(game);
     }
 }
 
@@ -448,8 +471,9 @@ void tetris_init(
         }
     }
 
-    tetris_spawn(game);
     game->prev_drop_time = get_millis();
+
+    game->game_has_started = 0;
 }
 
 void tetris_loop(
@@ -467,9 +491,22 @@ void tetris_loop(
 
     tetris_animate_bg(game, color_frame);
 
-    if (kb_read_map(kb->map, KEY_RIGHTSHIFT)) {
-        if (!kb_read_map(kb->prev_map, KEY_RIGHTSHIFT)) {
+    if (!game->game_has_started) {
+        /* Start game with right shift */
+        if (kb_read_map(kb->map, KEY_RIGHTSHIFT)) {
+            game->game_has_started = 1;
+            game->prev_drop_time = get_millis();
             tetris_spawn(game);
+        }
+        else {
+            return;
+        }
+    }
+    else {
+        /* Stop game with escape */
+        if (kb_read_map(kb->map, KEY_ESC)) {
+            tetris_reset(game);
+            return;
         }
     }
 
@@ -493,26 +530,6 @@ void tetris_loop(
             }
         }
     }
-    /*
-    if (kb_read_map(kb->map, KEY_UP)) {
-        if (!kb_read_map(kb->prev_map, KEY_UP) ||
-                get_millis() - game->key_timers[KEY_UP] > TETRIS_MS_PER_MOVE) {
-            if (!tetris_is_collision(game, game->current_x, game->current_y - 1, game->current_rotation)) {
-                game->current_y -= 1;
-                game->key_timers[KEY_UP] = get_millis();
-            }
-        }
-    }
-    if (kb_read_map(kb->map, KEY_DOWN)) {
-        if (!kb_read_map(kb->prev_map, KEY_DOWN) ||
-                get_millis() - game->key_timers[KEY_DOWN] > TETRIS_MS_PER_MOVE) {
-            if (!tetris_is_collision(game, game->current_x, game->current_y + 1, game->current_rotation)) {
-                game->current_y += 1;
-                game->key_timers[KEY_DOWN] = get_millis();
-            }
-        }
-    }
-    */
 
     if (game->tetromino_index != TETRIS_O_INDEX) {
         if (kb_read_map(kb->map, KEY_Z)) {

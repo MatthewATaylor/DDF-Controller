@@ -59,6 +59,8 @@ struct tetris {
     double bg_prev_time;
 
     double prev_drop_time;
+
+    uint8_t game_has_started;
 };
 
 void tetris_animate_bg(
@@ -82,6 +84,8 @@ void tetris_clear_rows(struct tetris *game);
 void tetris_clear_tetromino(struct tetris *game);
 
 void tetris_set_tetromino(struct tetris *game);
+
+void tetris_reset(struct tetris *game);
 
 void tetris_spawn(struct tetris *game);
 
