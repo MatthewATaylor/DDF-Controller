@@ -648,13 +648,14 @@ void tetris_loop(
 
     tetris_clear_tetromino(game);
 
+    /*
     if (kb_read_map(kb->map, KEY_LEFTSHIFT)) {
         if (!kb_read_map(kb->prev_map, KEY_LEFTSHIFT)) {
             ++game->score;
             ++game->rows_cleared;
         }
     }
-
+    */
 
     if (kb_read_map(kb->map, KEY_RIGHT)) {
         if (!kb_read_map(kb->prev_map, KEY_RIGHT) ||
@@ -757,16 +758,24 @@ void tetris_loop(
         }
     }
 
+    if (kb_read_map(kb->map, KEY_SPACE)) {
+        if (!kb_read_map(kb->prev_map, KEY_SPACE)) {
+            while (!tetris_is_collision(game, game->current_x, game->current_y + 1, game->current_rotation)) {
+                game->current_y += 1;
+            }
+        }
+    }
+
     ms_per_drop = TETRIS_BASE_MS_PER_DROP;
 
-    ms_per_drop -= game->rows_cleared * 12;
+    ms_per_drop -= game->rows_cleared * 13;
     if (ms_per_drop < 35) {
         ms_per_drop = 35;
     }
 
     if (kb_read_map(kb->map, KEY_DOWN)) {
-        if (ms_per_drop / 4.0 > 100) {
-            ms_per_drop /= 4.0;
+        if (ms_per_drop / 5.0 > 50) {
+            ms_per_drop /= 5.0;
         }
         else {
             ms_per_drop = fmin(ms_per_drop, 100);
