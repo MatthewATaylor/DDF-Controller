@@ -20,6 +20,10 @@
 #define TETRIS_BOARD_H 60
 #define TETRIS_BOARD_W_TILES 10
 #define TETRIS_BOARD_H_TILES 20
+#define TETRIS_SCORE_X 120
+#define TETRIS_SCORE_Y 55
+#define TETRIS_SCORE_W 39
+#define TETRIS_SCORE_H 10
 #define TETRIS_MS_PER_MOVE 250
 #define TETRIS_BG_LEVEL 30
 #define TETRIS_BASE_MS_PER_DROP 500
@@ -61,9 +65,17 @@ struct tetris {
     double prev_drop_time;
 
     uint8_t game_has_started;
+
+    uint32_t score;
+    uint32_t rows_cleared;
 };
 
 void tetris_animate_bg(
+    struct tetris *game,
+    uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
+);
+
+void tetris_draw_scoreboard(
     struct tetris *game,
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
 );

@@ -211,6 +211,79 @@ static struct tetris_tetromino tetris_tetromino_z = {
     255, 0, 0
 };
 
+static uint8_t digit_pixels[10][5][3] = {
+    {
+        {1, 1, 1},
+        {1, 0, 1},
+        {1, 0, 1},
+        {1, 0, 1},
+        {1, 1, 1}
+    },
+    {
+        {0, 1, 0},
+        {0, 1, 0},
+        {0, 1, 0},
+        {0, 1, 0},
+        {0, 1, 0}
+    },
+    {
+        {1, 1, 1},
+        {0, 0, 1},
+        {1, 1, 1},
+        {1, 0, 0},
+        {1, 1, 1}
+    },
+    {
+        {1, 1, 1},
+        {0, 0, 1},
+        {1, 1, 1},
+        {0, 0, 1},
+        {1, 1, 1}
+    },
+    {
+        {1, 0, 1},
+        {1, 0, 1},
+        {1, 1, 1},
+        {0, 0, 1},
+        {0, 0, 1}
+    },
+    {
+        {1, 1, 1},
+        {1, 0, 0},
+        {1, 1, 1},
+        {0, 0, 1},
+        {1, 1, 1}
+    },
+    {
+        {1, 1, 1},
+        {1, 0, 0},
+        {1, 1, 1},
+        {1, 0, 1},
+        {1, 1, 1}
+    },
+    {
+        {1, 1, 1},
+        {0, 0, 1},
+        {0, 0, 1},
+        {0, 0, 1},
+        {0, 0, 1}
+    },
+    {
+        {1, 1, 1},
+        {1, 0, 1},
+        {1, 1, 1},
+        {1, 0, 1},
+        {1, 1, 1}
+    },
+    {
+        {1, 1, 1},
+        {1, 0, 1},
+        {1, 1, 1},
+        {0, 0, 1},
+        {0, 0, 1}
+    }
+};
+
 void tetris_animate_bg(
     struct tetris *game,
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
@@ -274,6 +347,58 @@ void tetris_animate_bg(
     }
 }
 
+void tetris_draw_scoreboard(
+    struct tetris *game,
+    uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
+) {
+    uint8_t i, j, k, l, m, n;
+    uint8_t digit;
+    uint32_t score = game->score;
+    uint8_t score_pixel_x, score_pixel_y;
+
+    for (j = 0; j < 3; ++j) {
+        for (i = TETRIS_SCORE_Y - 2; i <= TETRIS_SCORE_Y + TETRIS_SCORE_H + 1; ++i) {
+            color_frame[i][TETRIS_SCORE_X - 2][j] = TETRIS_BG_LEVEL;
+            color_frame[i][TETRIS_SCORE_X + TETRIS_SCORE_W + 1][j] = TETRIS_BG_LEVEL;
+        }
+        for (i = TETRIS_SCORE_X - 2; i <= TETRIS_SCORE_X + TETRIS_SCORE_W + 1; ++i) {
+            color_frame[TETRIS_SCORE_Y - 2][i][j] = TETRIS_BG_LEVEL * (i % 2);
+            color_frame[TETRIS_SCORE_Y + TETRIS_SCORE_H + 1][i][j] = TETRIS_BG_LEVEL * (i % 2);
+        }
+    }
+
+    for (i = TETRIS_SCORE_Y - 1; i <= TETRIS_SCORE_Y + TETRIS_SCORE_H; ++i) {
+        for (j = TETRIS_SCORE_X - 1; j <= TETRIS_SCORE_X + TETRIS_SCORE_W; ++j) {
+            for (k = 0; k < 3; ++k) {
+                color_frame[i][j][k] = 0;
+            }
+        }
+    }
+
+    for (i = 0; i < 4; ++i) {
+        digit = score % 10;
+        score /= 10;
+
+        /* Loop over digit_pixels */
+        for (j = 0; j < 5; ++j) {
+            for (k = 0; k < 3; ++k) {
+                /* Loop over the area each element in digit_pixels takes up */
+                for (l = 0; l < 2; ++l) {
+                    for (m = 0; m < 3; ++m) {
+                        score_pixel_x = TETRIS_SCORE_X + (3 - i) * 10 + k * 3 + m;
+                        score_pixel_y = TETRIS_SCORE_Y + j * 2 + l;
+                        /* Loop over color channels */
+                        for (n = 0; n < 3; ++n) {
+                            color_frame[score_pixel_y][score_pixel_x][n] = 
+                                TETRIS_BG_LEVEL * digit_pixels[digit][j][k];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void tetris_color_tile(
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS],
     uint8_t row, uint8_t col,
@@ -322,6 +447,7 @@ uint8_t tetris_is_collision(
 
 void tetris_clear_rows(struct tetris *game) {
     uint8_t i, j, k, l;
+    uint8_t rows_cleared = 0;
 
     for (i = 0; i < TETRIS_BOARD_H_TILES; ++i) {
         for (j = 0; j < TETRIS_BOARD_W_TILES; ++j) {
@@ -336,9 +462,15 @@ void tetris_clear_rows(struct tetris *game) {
                             game->board[k][l] = game->board[k - 1][l];
                         }
                     }
+                    ++rows_cleared;
                 }
             }
-        } 
+        }  
+    }
+
+    if (rows_cleared) {
+        game->score += rows_cleared * pow(2, rows_cleared - 1);
+        game->rows_cleared += rows_cleared;
     }
 }
 
@@ -472,8 +604,9 @@ void tetris_init(
     }
 
     game->prev_drop_time = get_millis();
-
     game->game_has_started = 0;
+    game->score = 0;
+    game->rows_cleared = 0;
 }
 
 void tetris_loop(
@@ -490,11 +623,14 @@ void tetris_loop(
     uint8_t is_drop_end = 0;
 
     tetris_animate_bg(game, color_frame);
+    tetris_draw_scoreboard(game, color_frame);
 
     if (!game->game_has_started) {
         /* Start game with right shift */
         if (kb_read_map(kb->map, KEY_RIGHTSHIFT)) {
             game->game_has_started = 1;
+            game->score = 0;
+            game->rows_cleared = 0;
             game->prev_drop_time = get_millis();
             tetris_spawn(game);
         }
@@ -511,6 +647,14 @@ void tetris_loop(
     }
 
     tetris_clear_tetromino(game);
+
+    if (kb_read_map(kb->map, KEY_LEFTSHIFT)) {
+        if (!kb_read_map(kb->prev_map, KEY_LEFTSHIFT)) {
+            ++game->score;
+            ++game->rows_cleared;
+        }
+    }
+
 
     if (kb_read_map(kb->map, KEY_RIGHT)) {
         if (!kb_read_map(kb->prev_map, KEY_RIGHT) ||
@@ -613,12 +757,22 @@ void tetris_loop(
         }
     }
 
+    ms_per_drop = TETRIS_BASE_MS_PER_DROP;
+
+    ms_per_drop -= game->rows_cleared * 12;
+    if (ms_per_drop < 35) {
+        ms_per_drop = 35;
+    }
+
     if (kb_read_map(kb->map, KEY_DOWN)) {
-        ms_per_drop = TETRIS_BASE_MS_PER_DROP / 5.0;
+        if (ms_per_drop / 4.0 > 100) {
+            ms_per_drop /= 4.0;
+        }
+        else {
+            ms_per_drop = fmin(ms_per_drop, 100);
+        }
     }
-    else {
-        ms_per_drop = TETRIS_BASE_MS_PER_DROP;
-    }
+
     if (get_millis() - game->prev_drop_time > ms_per_drop) {
         game->prev_drop_time = get_millis();
         if (!tetris_is_collision(game, game->current_x, game->current_y + 1, game->current_rotation)) {
