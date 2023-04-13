@@ -35,6 +35,14 @@
 #define TETRIS_T_INDEX 5
 #define TETRIS_Z_INDEX 6
 
+#define TETRIS_PADDLE_SPEED 16
+#define TETRIS_BALL_SPEED 32
+#define TETRIS_PADDLE_W 16
+#define TETRIS_PADDLE_H 3
+#define TETRIS_BALL_W 6
+#define TETRIS_BALL_H 3
+#define TETRIS_MIN_ANGLE 0.36
+
 struct tetris_tetromino {
     uint8_t y_origin;
     uint8_t shape[4][4][4];
@@ -68,6 +76,14 @@ struct tetris {
 
     uint32_t score;
     uint32_t rows_cleared;
+
+    uint8_t is_pong;
+    float paddle_1_x, paddle_2_x;
+    float ball_x;
+    float ball_y;
+    float ball_theta;
+    uint8_t serve_is_waiting;
+    uint32_t paddle_1_score, paddle_2_score;
 };
 
 void tetris_animate_bg(
@@ -100,6 +116,8 @@ void tetris_set_tetromino(struct tetris *game);
 void tetris_reset(struct tetris *game);
 
 void tetris_spawn(struct tetris *game);
+
+void tetris_pong_pos_reset(struct tetris *game, int8_t server);
 
 void tetris_init(
     void *tetris,

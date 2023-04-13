@@ -327,6 +327,13 @@ int main(int argc, char **argv) {
         game_obj = &tetris;
         game_init_func = &tetris_init;
         game_loop_func = &tetris_loop;
+        tetris.is_pong = 0;
+    }
+    else if (!strcmp(argv[1], "pong")) {
+        game_obj = &tetris;
+        game_init_func = &tetris_init;
+        game_loop_func = &tetris_loop;
+        tetris.is_pong = 1;
     }
     else {
         /* Not a game, load GIF file */

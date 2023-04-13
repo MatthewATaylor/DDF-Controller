@@ -354,6 +354,8 @@ void tetris_draw_scoreboard(
     uint8_t i, j, k, l, m, n;
     uint8_t digit;
     uint32_t score = game->score;
+    uint32_t score_1 = game->paddle_1_score;
+    uint32_t score_2 = game->paddle_2_score;
     uint8_t score_pixel_x, score_pixel_y;
 
     for (j = 0; j < 3; ++j) {
@@ -376,8 +378,20 @@ void tetris_draw_scoreboard(
     }
 
     for (i = 0; i < 4; ++i) {
-        digit = score % 10;
-        score /= 10;
+        if (game->is_pong) {
+            if (i < 2) {
+                digit = score_2 % 10;
+                score_2 /= 10;
+            }
+            else {
+                digit = score_1 % 10;
+                score_1 /= 10;
+            }
+        }
+        else {
+            digit = score % 10;
+            score /= 10;
+        }
 
         /* Loop over digit_pixels */
         for (j = 0; j < 5; ++j) {
@@ -387,10 +401,20 @@ void tetris_draw_scoreboard(
                     for (m = 0; m < 3; ++m) {
                         score_pixel_x = TETRIS_SCORE_X + (3 - i) * 10 + k * 3 + m;
                         score_pixel_y = TETRIS_SCORE_Y + j * 2 + l;
-                        /* Loop over color channels */
-                        for (n = 0; n < 3; ++n) {
-                            color_frame[score_pixel_y][score_pixel_x][n] = 
-                                TETRIS_BG_LEVEL * digit_pixels[digit][j][k];
+
+                        if (game->is_pong) {
+                            color_frame[score_pixel_y][score_pixel_x][0] = 0;
+                            color_frame[score_pixel_y][score_pixel_x][1] = 
+                                100 * digit_pixels[digit][j][k] * (i < 2);
+                            color_frame[score_pixel_y][score_pixel_x][2] = 
+                                100 * digit_pixels[digit][j][k] * (i >= 2);
+                        }
+                        else {
+                            /* Loop over color channels */
+                            for (n = 0; n < 3; ++n) {
+                                color_frame[score_pixel_y][score_pixel_x][n] = 
+                                    TETRIS_BG_LEVEL * digit_pixels[digit][j][k];
+                            }
                         }
                     }
                 }
@@ -528,6 +552,17 @@ void tetris_spawn(struct tetris *game) {
     }
 }
 
+void tetris_pong_pos_reset(struct tetris *game, int8_t server) {
+    game->paddle_1_x = TETRIS_BOARD_X + TETRIS_BOARD_W / 2.0f - TETRIS_PADDLE_W / 2.0f;
+    game->paddle_2_x = TETRIS_BOARD_X + TETRIS_BOARD_W / 2.0f - TETRIS_PADDLE_W / 2.0f;
+
+    game->ball_x = TETRIS_BOARD_X + TETRIS_BOARD_W / 2.0f - TETRIS_BALL_W / 2.0f;
+    game->ball_y = TETRIS_BOARD_Y + TETRIS_BOARD_H / 2.0f - TETRIS_BALL_H / 2.0f;
+    game->ball_theta = server * M_PI / 2.0f;
+
+    game->serve_is_waiting = 1;
+}
+
 void tetris_init(
     void *tetris,
     uint8_t color_frame[LED_ROWS][LED_COLS][LED_CHANNELS]
@@ -607,6 +642,10 @@ void tetris_init(
     game->game_has_started = 0;
     game->score = 0;
     game->rows_cleared = 0;
+
+    tetris_pong_pos_reset(game, 1);
+    game->paddle_1_score = 0;
+    game->paddle_2_score = 0;
 }
 
 void tetris_loop(
@@ -616,14 +655,146 @@ void tetris_loop(
     float spf
 ) {
     struct tetris *game = (struct tetris *) tetris;
-    uint8_t i, j;
+    uint8_t i, j, k;
     uint8_t new_rotation;
     int8_t (*wall_kick)[4][2];
     double ms_per_drop;
     uint8_t is_drop_end = 0;
 
+    uint8_t paddle_1_x, paddle_2_x;
+    uint8_t ball_x, ball_y;
+    float ball_vx, ball_vy;
+    float hit_fraction_right;
+
     tetris_animate_bg(game, color_frame);
     tetris_draw_scoreboard(game, color_frame);
+
+    if (game->is_pong) {
+        /* Yes, this is terrible - but I need sleeeeeeep */
+
+        paddle_1_x = (uint8_t) game->paddle_1_x;
+        paddle_2_x = (uint8_t) game->paddle_2_x;
+
+        ball_x = (uint8_t) game->ball_x;
+        ball_y = (uint8_t) game->ball_y;
+
+        for (i = TETRIS_BOARD_Y; i < TETRIS_BOARD_Y + TETRIS_BOARD_H; ++i) {
+            for (j = TETRIS_BOARD_X; j < TETRIS_BOARD_X + TETRIS_BOARD_W; ++j) {
+                if (i >= ball_y && i < ball_y + TETRIS_BALL_H &&
+                        j >= ball_x && j < ball_x + TETRIS_BALL_W) {
+                    for (k = 0; k < 3; ++k) {
+                        color_frame[i][j][k] = 180;
+                    }
+                }
+            }
+        }
+
+        for (i = 0; i < TETRIS_PADDLE_H; ++i) {
+            for (j = TETRIS_BOARD_X; j < TETRIS_BOARD_X + TETRIS_BOARD_W; ++j) {
+                if (j >= paddle_2_x && j < paddle_2_x + TETRIS_PADDLE_W) {
+                    color_frame[TETRIS_BOARD_Y + i][j][0] = 0;
+                    color_frame[TETRIS_BOARD_Y + i][j][1] = 255;
+                    color_frame[TETRIS_BOARD_Y + i][j][2] = 0;
+                }
+                if (j >= paddle_1_x && j < paddle_1_x + TETRIS_PADDLE_W) {
+                    color_frame[TETRIS_BOARD_Y + TETRIS_BOARD_H - TETRIS_PADDLE_H + i][j][0] = 0;
+                    color_frame[TETRIS_BOARD_Y + TETRIS_BOARD_H - TETRIS_PADDLE_H + i][j][1] = 0;
+                    color_frame[TETRIS_BOARD_Y + TETRIS_BOARD_H - TETRIS_PADDLE_H + i][j][2] = 255;
+                }
+            }
+        }
+
+        if (game->serve_is_waiting) {
+            /* Start game with space */
+            if (kb_read_map(kb->map, KEY_SPACE)) {
+                game->serve_is_waiting = 0;
+            }
+        }
+        else {
+            /* Stop game with escape */
+            if (kb_read_map(kb->map, KEY_ESC)) {
+                game->paddle_1_score = 0;
+                game->paddle_2_score = 0;
+                tetris_pong_pos_reset(game, 1);
+            }
+        }
+
+        if (kb_read_map(kb->map, KEY_W)) {
+            game->paddle_1_x -= spf * TETRIS_PADDLE_SPEED;
+        }
+        if (kb_read_map(kb->map, KEY_S)) {
+            game->paddle_1_x += spf * TETRIS_PADDLE_SPEED;
+        }
+
+        if (kb_read_map(kb->map, KEY_UP)) {
+            game->paddle_2_x -= spf * TETRIS_PADDLE_SPEED;
+        }
+        if (kb_read_map(kb->map, KEY_DOWN)) {
+            game->paddle_2_x += spf * TETRIS_PADDLE_SPEED;
+        }
+
+        if (game->paddle_1_x < TETRIS_BOARD_X) {
+            game->paddle_1_x = TETRIS_BOARD_X;
+        }
+        if (game->paddle_1_x > TETRIS_BOARD_X + TETRIS_BOARD_W - TETRIS_PADDLE_W) {
+            game->paddle_1_x = TETRIS_BOARD_X + TETRIS_BOARD_W - TETRIS_PADDLE_W;
+        }
+        if (game->paddle_2_x < TETRIS_BOARD_X) {
+            game->paddle_2_x = TETRIS_BOARD_X;
+        }
+        if (game->paddle_2_x > TETRIS_BOARD_X + TETRIS_BOARD_W - TETRIS_PADDLE_W) {
+            game->paddle_2_x = TETRIS_BOARD_X + TETRIS_BOARD_W - TETRIS_PADDLE_W;
+        }
+
+        ball_vx = TETRIS_BALL_SPEED * cos(game->ball_theta);
+        ball_vy = TETRIS_BALL_SPEED * sin(game->ball_theta);
+
+        if (!game->serve_is_waiting) {
+            game->ball_x += 2 * spf * ball_vx;
+            game->ball_y -= spf * ball_vy;
+        }
+
+        paddle_1_x = (uint8_t) game->paddle_1_x;
+        paddle_2_x = (uint8_t) game->paddle_2_x;
+
+        ball_x = (uint8_t) game->ball_x;
+        ball_y = (uint8_t) game->ball_y;
+
+        if (game->ball_y < TETRIS_BOARD_Y) {
+            ++game->paddle_1_score;
+            tetris_pong_pos_reset(game, -1);
+        }
+        else if (game->ball_y + TETRIS_BALL_H > TETRIS_BOARD_Y + TETRIS_BOARD_H) {
+            ++game->paddle_2_score;
+            tetris_pong_pos_reset(game, 1);
+        }
+        else if (game->ball_x + TETRIS_BALL_W > game->paddle_1_x &&
+                game->ball_x < game->paddle_1_x + TETRIS_PADDLE_W &&
+                game->ball_y + TETRIS_BALL_H > TETRIS_BOARD_Y + TETRIS_BOARD_H - TETRIS_PADDLE_H) {
+            hit_fraction_right = 
+                (game->ball_x + TETRIS_BALL_W - game->paddle_1_x) /
+                    (float) (TETRIS_PADDLE_W + TETRIS_BALL_W);
+            game->ball_theta = (M_PI - 2 * TETRIS_MIN_ANGLE) * (1 - hit_fraction_right) + TETRIS_MIN_ANGLE;
+        }
+        else if (game->ball_x + TETRIS_BALL_W > game->paddle_2_x &&
+                game->ball_x < game->paddle_2_x + TETRIS_PADDLE_W &&
+                game->ball_y < TETRIS_BOARD_Y + TETRIS_PADDLE_H ) {
+            hit_fraction_right = 
+                (game->ball_x + TETRIS_BALL_W - game->paddle_2_x) /
+                    (float) (TETRIS_PADDLE_W + TETRIS_BALL_W);
+            game->ball_theta = -(M_PI - 2 * TETRIS_MIN_ANGLE) * (1 - hit_fraction_right) - TETRIS_MIN_ANGLE;
+        }
+        else if (game->ball_x < TETRIS_BOARD_X) {
+            game->ball_theta = M_PI - game->ball_theta;
+            game->ball_x = TETRIS_BOARD_X;
+        }
+        else if (game->ball_x + TETRIS_BALL_W > TETRIS_BOARD_X + TETRIS_BOARD_W) {
+            game->ball_theta = M_PI - game->ball_theta;
+            game->ball_x = TETRIS_BOARD_X + TETRIS_BOARD_W - TETRIS_BALL_W;
+        }
+
+        return;
+    }
 
     if (!game->game_has_started) {
         /* Start game with right shift */
